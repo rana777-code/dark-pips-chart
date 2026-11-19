@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DARK PIPS CHART</title>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d14;color:#e8edf5;font-family:Arial,sans-serif}
+header{padding:18px 15px;background:#0d1520;border-bottom:1px solid #1c2938}
+.logo{font-size:23px;font-weight:bold;color:#e8b44c}
+.sub{font-size:11px;color:#8290a3;margin-top:5px}
+nav{display:flex;overflow:auto;gap:8px;padding:12px;background:#0d1520}
+button{background:#162231;color:#b8c5d6;border:1px solid #29394b;padding:10px 13px;border-radius:8px;white-space:nowrap}
+button.active{background:#d6a442;color:#07101a;font-weight:bold}
+.section{padding:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#chart{height:430px;width:100%}
+.tools{display:flex;overflow:auto;gap:8px;padding:10px}
+.panel{background:#101a27;border:1px solid #253346;border-radius:10px;margin:10px;padding:12px}
+.small{font-size:12px;color:#8798ad}
+.price{font-size:22px;font-weight:bold;margin:7px 0}
+footer{display:flex;justify-content:space-around;background:#0d1520;padding:15px;position:sticky;bottom:0}
+footer button{border:0;background:transparent}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">DARK PIPS</div>
+<div class="sub">SMART MARKET ANALYSIS</div>
+</header>
+
+<div class="panel">
+<div class="row">
+<div>
+<div id="pair" style="font-weight:bold;font-size:18px">XAUUSD</div>
+<div class="small">Demo market data</div>
+</div>
+<div style="text-align:right">
+<div class="price" id="price">--</div>
+<div class="small" id="change">Demo price</div>
+</div>
+</div>
+</div>
+
+<nav id="pairs">
+<button class="active" onclick="setPair('XAUUSD',this)">XAUUSD</button>
+<button onclick="setPair('EURUSD',this)">EURUSD</button>
+<button onclick="setPair('GBPUSD',this)">GBPUSD</button>
+<button onclick="setPair('USDJPY',this)">USDJPY</button>
+<button onclick="setPair('BTCUSD',this)">BTCUSD</button>
+</nav>
+
+<nav id="times">
+<button onclick="setTime('1m',this)">1m</button>
+<button class="active" onclick="setTime('5m',this)">5m</button>
+<button onclick="setTime('15m',this)">15m</button>
+<button onclick="setTime('30m',this)">30m</button>
+<button onclick="setTime('1H',this)">1H</button>
+<button onclick="setTime('4H',this)">4H</button>
+<button onclick="setTime('1D',this)">1D</button>
+</nav>
+
+<div class="tools">
+<button onclick="toggleEMA()">EMA</button>
+<button onclick="addLine()">Horizontal Line</button>
+<button onclick="resetChart()">Reset Chart</button>
+</div>
+
+<div id="chart"></div>
+
+<div class="panel">
+<div style="font-weight:bold">DARK PIPS ANALYSIS</div>
+<div class="small" style="margin-top:8px">
+Use chart to study price action, market structure, liquidity and SMC concepts.
+<br><br>
+Chart data is simulated. It is not live market data.
+</div>
+</div>
+
+<footer>
+<button onclick="setPair('XAUUSD')">Chart</button>
+<button onclick="alert('Analysis tools coming soon')">Analysis</button>
+<button onclick="alert('Watchlist coming soon')">Watchlist</button>
+<button onclick="alert('Settings coming soon')">Settings</button>
+</footer>
+
+<script>
+const chartEl=document.getElementById('chart');
+
+const chart=LightweightCharts.createChart(chartEl,{
+  width:chartEl.clientWidth,
+  height:430,
+  layout:{
+    background:{color:'#080d14'},
+    textColor:'#b8c5d6'
+  },
+  grid:{
+    vertLines:{color:'#152131'},
+    horzLines:{color:'#152131'}
+  },
+  rightPriceScale:{borderColor:'#243246'},
+  timeScale:{borderColor:'#243246',timeVisible:true},
+  crosshair:{mode:1}
+});
+
+const candle=chart.addCandlestickSeries({
+  upColor:'#16c784',
+  downColor:'#ea3943',
+  borderUpColor:'#16c784',
+  borderDownColor:'#ea3943',
+  wickUpColor:'#16c784',
+  wickDownColor:'#ea3943'
+});
+
+let pair='XAUUSD',tf='5m',emaSeries=null;
+
+function basePrice(){
+  if(pair==='XAUUSD')return 2650;
+  if(pair==='EURUSD')return 1.08;
+  if(pair==='GBPUSD')return 1.27;
+  if(pair==='USDJPY')return 150;
+  return 90000;
+}
+
+function generateData(){
+  let base=basePrice();
+  let data=[];
+  let now=Math.floor(Date.now()/1000)-300*200;
+  for(let i=0;i<200;i++){
+    let open=base;
+    if(i>0)open=data[i-1].close;
+    let volatility=base*(pair==='BTCUSD'?0.003:pair==='XAUUSD'?0.001:0.0005);
+    let close=open+(Math.random()-0.5)*volatility;
+    let high=Math.max(open,close)+Math.random()*volatility*.5;
+    let low=Math.min(open,close)-Math.random()*volatility*.5;
+    data.push({
+      time:now+i*300,
+      open,high,low,close
+    });
+  }
+  return data;
+}
+
+function load(){
+  const data=generateData();
+  candle.setData(data);
+  chart.timeScale().fitContent();
+  document.getElementById('pair').innerText=pair;
+  document.getElementById('price').innerText=data[data.length-1].close.toFixed(pair==='XAUUSD'?2:pair==='BTCUSD'?2:4);
+  document.getElementById('change').innerText='Demo price';
+  if(emaSeries){
+    emaSeries.setData(makeEMA(data));
+  }
+}
+
+function makeEMA(data){
+  let period=20,alpha=2/(period+1),value=data[0].close;
+  return data.map((d,i)=>{
+    value=i===0?d.close:alpha*d.close+(1-alpha)*value;
+    return {time:d.time,value};
+  });
+}
+
+function toggleEMA(){
+  if(!emaSeries){
+    emaSeries=chart.addLineSeries({color:'#f0bd4e',lineWidth:2});
+    emaSeries.setData(makeEMA(candleData()));
+  }else{
+    chart.removeSeries(emaSeries);
+    emaSeries=null;
+  }
+}
+
+function candleData(){
+  return generateData();
+}
+
+function addLine(){
+  let last=basePrice();
+  candle.createPriceLine({
+    price:last,
+    color:'#e6b44c',
+    lineWidth:1,
+    lineStyle:2,
+    axisLabelVisible:true,
+    title:'Level'
+  });
+}
+
+function resetChart(){
+  load();
+}
+
+function setPair(p,btn){
+  pair=p;
+  document.querySelectorAll('#pairs button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  load();
+}
+
+function setTime(t,btn){
+  tf=t;
+  document.querySelectorAll('#times button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  load();
+}
+
+window.addEventListener('resize',()=>{
+  chart.applyOptions({width:chartEl.clientWidth});
+});
+
+load();
+</script>
+</body>
+</html>
